@@ -1331,7 +1331,26 @@ int rom_copy(uint8_t *dest, hwaddr addr, size_t size)
 
 void *rom_ptr(hwaddr addr, size_t size)
 {
+    return rom_alias_ptr(addr, size, NULL);
+}
+
+void *rom_alias_ptr(hwaddr addr, size_t size, AddressSpace *as)
+{
     Rom *rom;
+    if(as)
+    {
+        MemTxAttrs attrs;
+        hwaddr len;
+        hwaddr xlat;
+        MemoryRegion *mr;
+
+        memset(&attrs, 0, sizeof(attrs));
+        mr = address_space_translate(as, addr, &xlat, &len, false, attrs);
+        if(mr)
+        {
+            addr = mr->addr;
+        }
+    }
 
     rom = find_rom(addr, size);
     if (!rom || !rom->data)
