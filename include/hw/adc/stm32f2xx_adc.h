@@ -52,6 +52,9 @@
 #define ADC_CR2_CONT    0x02
 #define ADC_CR2_ALIGN   0x800
 #define ADC_CR2_SWSTART 0x40000000
+#define ADC_CR2_RSTCAL  0x8
+#define ADC_CR2_CAL     0x4
+
 
 #define ADC_CR1_RES 0x3000000
 

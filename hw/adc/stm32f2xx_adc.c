@@ -190,6 +190,8 @@ static void stm32f2xx_adc_write(void *opaque, hwaddr addr,
         break;
     case ADC_CR2:
         s->adc_cr2 = value;
+        s->adc_cr2 &= (~ADC_CR2_RSTCAL);
+        s->adc_cr2 &= (~ADC_CR2_CAL);
         break;
     case ADC_SMPR1:
         s->adc_smpr1 = value;
