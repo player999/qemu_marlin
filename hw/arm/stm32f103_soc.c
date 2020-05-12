@@ -32,17 +32,17 @@
 #include "sysemu/sysemu.h"
 
 /* At the moment only Timer 2 to 5 are modelled */
-static const uint32_t timer_addr[STM_NUM_TIMERS] = { 0x40000000, 0x40000400,
-    0x40000800, 0x40000C00 };
-static const uint32_t usart_addr[STM_NUM_USARTS] = { 0x40011000, 0x40004400,
-    0x40004800, 0x40004C00, 0x40005000, 0x40011400 };
-static const uint32_t adc_addr[STM_NUM_ADCS] = { 0x40012000, 0x40012100,
-    0x40012200 };
-static const uint32_t spi_addr[STM_NUM_SPIS] = { 0x40013000, 0x40003800,
-    0x40003C00 };
+static const uint32_t timer_addr[STM_NUM_TIMERS] = { 0x40000000, 0x40000400, 0x40000800, 0x40000C00 };
+static const uint32_t usart_addr[STM_NUM_USARTS] = {0x40013800, 0x40004400, 0x40004800, 0x40004C00, 0x40005000};
+static const uint32_t adc_addr[STM_NUM_ADCS] = {0x40012400, 0x40012800, 0x40013C00};
+static const uint32_t spi_addr[STM_NUM_SPIS] = {0x40013000, 0x40003800, 0x40003C00};
+
+/* RCC module */
+static const uint32_t rcc_addr = 0x40021000;
 
 static const int timer_irq[STM_NUM_TIMERS] = {28, 29, 30, 50};
-static const int usart_irq[STM_NUM_USARTS] = {37, 38, 39, 52, 53, 71};
+static const int usart_irq[STM_NUM_USARTS] = {37, 38, 39, 52, 53};
+
 #define ADC_IRQ 18
 static const int spi_irq[STM_NUM_SPIS] = {35, 36, 51};
 
@@ -78,6 +78,9 @@ static void stm32f103_soc_initfn(Object *obj)
         sysbus_init_child_obj(obj, "spi[*]", &s->spi[i], sizeof(s->spi[i]),
                               TYPE_STM32F2XX_SPI);
     }
+
+    sysbus_init_child_obj(obj, "rcc", &s->rcc, sizeof(s->rcc),
+        TYPE_STM32F1XX_RCC);
 }
 
 static void stm32f103_soc_realize(DeviceState *dev_soc, Error **errp)
@@ -194,6 +197,17 @@ static void stm32f103_soc_realize(DeviceState *dev_soc, Error **errp)
         busdev = SYS_BUS_DEVICE(dev);
         sysbus_mmio_map(busdev, 0, spi_addr[i]);
         sysbus_connect_irq(busdev, 0, qdev_get_gpio_in(armv7m, spi_irq[i]));
+    }
+
+    {
+        dev = DEVICE(&s->rcc);
+        object_property_set_bool(OBJECT(&s->rcc), true, "realized", &err);
+        if (err != NULL) {
+            error_propagate(errp, err);
+            return;
+        }
+        busdev = SYS_BUS_DEVICE(dev);
+        sysbus_mmio_map(busdev, 0, rcc_addr);
     }
 }
 

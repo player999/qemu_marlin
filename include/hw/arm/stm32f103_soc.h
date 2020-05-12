@@ -27,6 +27,7 @@
 
 #include "hw/misc/stm32f2xx_syscfg.h"
 #include "hw/timer/stm32f2xx_timer.h"
+#include "hw/timer/stm32f1xx_rcc.h"
 #include "hw/char/stm32f2xx_usart.h"
 #include "hw/adc/stm32f2xx_adc.h"
 #include "hw/or-irq.h"
@@ -37,7 +38,7 @@
 #define STM32F103_SOC(obj) \
     OBJECT_CHECK(STM32F103State, (obj), TYPE_STM32F103_SOC)
 
-#define STM_NUM_USARTS 6
+#define STM_NUM_USARTS 5
 #define STM_NUM_TIMERS 4
 #define STM_NUM_ADCS 3
 #define STM_NUM_SPIS 3
@@ -63,6 +64,7 @@ typedef struct STM32F103State {
     STM32F2XXTimerState timer[STM_NUM_TIMERS];
     STM32F2XXADCState adc[STM_NUM_ADCS];
     STM32F2XXSPIState spi[STM_NUM_SPIS];
+    STM32F1XXRCCState rcc;
 
     qemu_or_irq *adc_irqs;
 } STM32F103State;
