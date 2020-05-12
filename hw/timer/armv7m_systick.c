@@ -160,7 +160,8 @@ static MemTxResult systick_write(void *opaque, hwaddr addr,
                     s->tick += now;
                     timer_mod(s->timer, s->tick);
                 } else {
-                    systick_reload(s, 1);
+                    /* This causes app freeze */
+                    //systick_reload(s, 1);
                 }
             } else {
                 timer_del(s->timer);
