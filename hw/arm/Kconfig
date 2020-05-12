@@ -328,6 +328,7 @@ config STM32F103_SOC
     select STM32F2XX_SYSCFG
     select STM32F2XX_ADC
     select STM32F2XX_SPI
+    select STM32F1XX_RCC
 
 config STM32F205_SOC
     bool

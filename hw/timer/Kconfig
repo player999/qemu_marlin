@@ -28,6 +28,9 @@ config ALLWINNER_A10_PIT
 config STM32F2XX_TIMER
     bool
 
+config STM32F1XX_RCC
+    bool
+
 config CMSDK_APB_TIMER
     bool
     select PTIMER
