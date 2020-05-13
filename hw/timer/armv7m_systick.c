@@ -27,7 +27,7 @@
 #define SYSTICK_CLKSOURCE (1 << 2)
 #define SYSTICK_COUNTFLAG (1 << 16)
 
-int system_clock_scale;
+int system_clock_scale = SYSTICK_SCALE;
 
 /* Conversion factor from qemu timer to SysTick frequencies.  */
 static inline int64_t systick_scale(SysTickState *s)
@@ -52,11 +52,17 @@ static void systick_reload(SysTickState *s, int reset)
         return;
     }
 
-    if (reset) {
-        s->tick = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
+    int64_t inc = (s->reload + 1) * systick_scale(s);
+    int64_t next_noreset = s->tick + inc;
+    int64_t now = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL);
+    if(reset || (now > next_noreset))
+    {
+        timer_mod(s->timer, now + inc);
     }
-    s->tick += (s->reload + 1) * systick_scale(s);
-    timer_mod(s->timer, s->tick);
+    else
+    {
+        timer_mod(s->timer, next_noreset);
+    }
 }
 
 static void systick_timer_tick(void *opaque)
@@ -161,7 +167,7 @@ static MemTxResult systick_write(void *opaque, hwaddr addr,
                     timer_mod(s->timer, s->tick);
                 } else {
                     /* This causes app freeze */
-                    //systick_reload(s, 1);
+                    systick_reload(s, 1);
                 }
             } else {
                 timer_del(s->timer);
