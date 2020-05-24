@@ -36,6 +36,8 @@ static const uint32_t timer_addr[STM_NUM_TIMERS] = { 0x40000000, 0x40000400, 0x4
 static const uint32_t usart_addr[STM_NUM_USARTS] = {0x40013800, 0x40004400, 0x40004800, 0x40004C00, 0x40005000};
 static const uint32_t adc_addr[STM_NUM_ADCS] = {0x40012400, 0x40012800, 0x40013C00};
 static const uint32_t spi_addr[STM_NUM_SPIS] = {0x40013000, 0x40003800, 0x40003C00};
+static const uint32_t gpio_addr[STM_NUM_GPIOS] = {  0x40010800, 0x40010C00, 0x40011000, 0x40011400,
+                                                    0x40011800, 0x40011C00, 0x40012000};
 
 /* RCC module */
 static const uint32_t rcc_addr = 0x40021000;
@@ -77,6 +79,11 @@ static void stm32f103_soc_initfn(Object *obj)
     for (i = 0; i < STM_NUM_SPIS; i++) {
         sysbus_init_child_obj(obj, "spi[*]", &s->spi[i], sizeof(s->spi[i]),
                               TYPE_STM32F2XX_SPI);
+    }
+
+    for (i = 0; i < STM_NUM_GPIOS; i++) {
+        sysbus_init_child_obj(obj, "gpio[*]", &s->gpio[i], sizeof(s->gpio[i]),
+                              TYPE_STM32F1XX_GPIO);
     }
 
     sysbus_init_child_obj(obj, "rcc", &s->rcc, sizeof(s->rcc),
@@ -197,6 +204,23 @@ static void stm32f103_soc_realize(DeviceState *dev_soc, Error **errp)
         busdev = SYS_BUS_DEVICE(dev);
         sysbus_mmio_map(busdev, 0, spi_addr[i]);
         sysbus_connect_irq(busdev, 0, qdev_get_gpio_in(armv7m, spi_irq[i]));
+    }
+
+    /* GPIOS */
+    for (i = 0; i < STM_NUM_GPIOS; i++) {
+        dev = DEVICE(&(s->gpio[i]));
+        object_property_set_uint(OBJECT(&s->gpio[i]), i, "port-id", &err);
+        if (err != NULL) {
+            error_propagate(errp, err);
+            return;
+        }
+        object_property_set_bool(OBJECT(&s->gpio[i]), true, "realized", &err);
+        if (err != NULL) {
+            error_propagate(errp, err);
+            return;
+        }
+        busdev = SYS_BUS_DEVICE(dev);
+        sysbus_mmio_map(busdev, 0, gpio_addr[i]);
     }
 
     {
