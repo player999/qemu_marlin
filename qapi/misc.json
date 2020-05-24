@@ -1550,3 +1550,32 @@
 ##
 { 'command': 'query-vm-generation-id', 'returns': 'GuidInfo' }
 
+##
+# @GPIO_PIN_CHANGE:
+#
+# MCU event which notifies about change of output value
+#
+# @port-id: port
+#
+# @pin: pin number
+#
+# @value: pin value
+#
+# Since: 5.0.0
+#
+# Example:
+#
+# <- { "timestamp": {"seconds": 1290688046, "microseconds": 388707},
+#      "event": "GPIO_PIN_CHANGE",
+#      "data": {
+#        "port-id": 0,
+#        "pin": 1,
+#        "value": true
+#    }}
+#
+##
+{ 'event': 'GPIO_PIN_CHANGE',
+  'data': { 'port-id': 'int',
+            'pin': 'int',
+            'value': 'bool' } }
+
