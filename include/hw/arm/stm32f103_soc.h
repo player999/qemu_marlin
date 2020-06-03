@@ -31,6 +31,7 @@
 #include "hw/char/stm32f2xx_usart.h"
 #include "hw/adc/stm32f2xx_adc.h"
 #include "hw/gpio/stm32f1xx_gpio.h"
+#include "hw/dma/stm32f1xx_dma.h"
 #include "hw/or-irq.h"
 #include "hw/ssi/stm32f2xx_spi.h"
 #include "hw/arm/armv7m.h"
@@ -44,6 +45,7 @@
 #define STM_NUM_ADCS 3
 #define STM_NUM_SPIS 3
 #define STM_NUM_GPIOS 7
+#define STM_NUM_DMAS 2
 
 #define FLASH_BASE_ADDRESS 0x08000000
 #define FLASH_SIZE (1024 * 1024)
@@ -68,6 +70,7 @@ typedef struct STM32F103State {
     STM32F2XXSPIState spi[STM_NUM_SPIS];
     STM32F1XXRCCState rcc;
     STM32F1XXGPIOState gpio[STM_NUM_GPIOS];
+    STM32F1XXDMAState dma[STM_NUM_DMAS];
 
     qemu_or_irq *adc_irqs;
 } STM32F103State;

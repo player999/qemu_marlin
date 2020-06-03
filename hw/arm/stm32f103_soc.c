@@ -38,6 +38,8 @@ static const uint32_t adc_addr[STM_NUM_ADCS] = {0x40012400, 0x40012800, 0x40013C
 static const uint32_t spi_addr[STM_NUM_SPIS] = {0x40013000, 0x40003800, 0x40003C00};
 static const uint32_t gpio_addr[STM_NUM_GPIOS] = {  0x40010800, 0x40010C00, 0x40011000, 0x40011400,
                                                     0x40011800, 0x40011C00, 0x40012000};
+static const uint32_t dma_addr[STM_NUM_DMAS] = {0x40020000, 0x40020400};
+static const uint8_t dma_channel_num[STM_NUM_DMAS] = {7, 5};
 
 /* RCC module */
 static const uint32_t rcc_addr = 0x40021000;
@@ -47,6 +49,10 @@ static const int usart_irq[STM_NUM_USARTS] = {37, 38, 39, 52, 53};
 
 #define ADC_IRQ 18
 static const int spi_irq[STM_NUM_SPIS] = {35, 36, 51};
+
+/* DMA Request map */
+int8_t acd_req_map[] = {0, -1, 4};
+int8_t acd_dma_map[] = {0, -1, 1};
 
 static void stm32f103_soc_initfn(Object *obj)
 {
@@ -58,6 +64,12 @@ static void stm32f103_soc_initfn(Object *obj)
 
     sysbus_init_child_obj(obj, "syscfg", &s->syscfg, sizeof(s->syscfg),
                           TYPE_STM32F2XX_SYSCFG);
+
+    for (i = 0; i < STM_NUM_DMAS; i++) {
+        sysbus_init_child_obj(obj, "dma[*]", &s->dma[i],
+                              sizeof(s->dma[i]), TYPE_STM32F1XX_DMA);
+        object_property_add_const_link(OBJECT(&s->dma[i]), "dma-mr", OBJECT(get_system_memory()), &error_abort);
+    }
 
     for (i = 0; i < STM_NUM_USARTS; i++) {
         sysbus_init_child_obj(obj, "usart[*]", &s->usart[i],
@@ -141,6 +153,27 @@ static void stm32f103_soc_realize(DeviceState *dev_soc, Error **errp)
     sysbus_mmio_map(busdev, 0, 0x40013800);
     sysbus_connect_irq(busdev, 0, qdev_get_gpio_in(armv7m, 71));
 
+    /*DMA1 and DMA2*/
+    for (i = 0; i < STM_NUM_DMAS; i++)
+    {
+        dev = DEVICE(&s->dma[i]);
+
+        object_property_set_uint(OBJECT(&s->dma[i]), dma_channel_num[i], "channel-count", &err);
+        if (err != NULL) {
+            error_propagate(errp, err);
+            return;
+        }
+
+        object_property_set_bool(OBJECT(&s->dma[i]), true, "realized", &err);
+        if (err != NULL) {
+            error_propagate(errp, err);
+            return;
+        }
+
+        busdev = SYS_BUS_DEVICE(dev);
+        sysbus_mmio_map(busdev, 0, dma_addr[i]);
+    }
+
     /* Attach UART (uses USART registers) and USART controllers */
     for (i = 0; i < STM_NUM_USARTS; i++) {
         dev = DEVICE(&(s->usart[i]));
@@ -182,6 +215,12 @@ static void stm32f103_soc_realize(DeviceState *dev_soc, Error **errp)
 
     for (i = 0; i < STM_NUM_ADCS; i++) {
         dev = DEVICE(&(s->adc[i]));
+        object_property_set_bool(OBJECT(&s->adc[i]), true, "stm32f1xx-mode", &err);
+        if (err != NULL) {
+            error_propagate(errp, err);
+            return;
+        }
+
         object_property_set_bool(OBJECT(&s->adc[i]), true, "realized", &err);
         if (err != NULL) {
             error_propagate(errp, err);
@@ -191,6 +230,10 @@ static void stm32f103_soc_realize(DeviceState *dev_soc, Error **errp)
         sysbus_mmio_map(busdev, 0, adc_addr[i]);
         sysbus_connect_irq(busdev, 0,
                            qdev_get_gpio_in(DEVICE(s->adc_irqs), i));
+
+        if(acd_dma_map[i] != -1)
+            qdev_connect_gpio_out_named(DEVICE(busdev), STM32F2XX_ADC_DMA_REQUEST, 0,
+                qdev_get_gpio_in_named(DEVICE(&(s->dma[acd_dma_map[i]])), STM32F1XX_DMA_REQUEST_SLOTS, acd_req_map[i]));
     }
 
     /* SPI 1 and 2 */
