@@ -51,18 +51,19 @@
 #define ADC_CR2_ADON    0x01
 #define ADC_CR2_CONT    0x02
 #define ADC_CR2_ALIGN   0x800
-#define ADC_CR2_SWSTART 0x40000000
-#define ADC_CR2_RSTCAL  0x8
-#define ADC_CR2_CAL     0x4
+#define ADC_CR2_SWSTART ((s->stm32f1xx)?0x400000:0x40000000)
+#define ADC_CR2_RSTCAL  ((s->stm32f1xx)?0x8:0)
+#define ADC_CR2_CAL     ((s->stm32f1xx)?0x4:0)
 
 
-#define ADC_CR1_RES 0x3000000
+#define ADC_CR1_RES ((s->stm32f1xx)?0x0:0x3000000)
 
 #define ADC_COMMON_ADDRESS 0x100
 
 #define TYPE_STM32F2XX_ADC "stm32f2xx-adc"
 #define STM32F2XX_ADC(obj) \
     OBJECT_CHECK(STM32F2XXADCState, (obj), TYPE_STM32F2XX_ADC)
+#define STM32F2XX_ADC_DMA_REQUEST "stm32f2xx-adc-dma-req"
 
 typedef struct {
     /* <private> */
@@ -86,7 +87,10 @@ typedef struct {
     uint32_t adc_jdr[4];
     uint32_t adc_dr;
 
+    bool stm32f1xx;
+
     qemu_irq irq;
+    qemu_irq dma_req;
 } STM32F2XXADCState;
 
 #endif /* HW_STM32F2XX_ADC_H */

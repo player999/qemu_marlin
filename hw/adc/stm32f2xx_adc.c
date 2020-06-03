@@ -24,6 +24,8 @@
 
 #include "qemu/osdep.h"
 #include "hw/sysbus.h"
+#include "hw/irq.h"
+#include "hw/qdev-properties.h"
 #include "migration/vmstate.h"
 #include "qemu/log.h"
 #include "qemu/module.h"
@@ -192,6 +194,10 @@ static void stm32f2xx_adc_write(void *opaque, hwaddr addr,
         s->adc_cr2 = value;
         s->adc_cr2 &= (~ADC_CR2_RSTCAL);
         s->adc_cr2 &= (~ADC_CR2_CAL);
+        if((s->adc_cr2 & ADC_CR2_ADON) && (s->adc_cr2 & ADC_CR2_SWSTART))
+        {
+            qemu_irq_raise(s->dma_req);
+        }
         break;
     case ADC_SMPR1:
         s->adc_smpr1 = value;
@@ -269,8 +275,14 @@ static const VMStateDescription vmstate_stm32f2xx_adc = {
         VMSTATE_UINT32(adc_jsqr, STM32F2XXADCState),
         VMSTATE_UINT32_ARRAY(adc_jdr, STM32F2XXADCState, 4),
         VMSTATE_UINT32(adc_dr, STM32F2XXADCState),
+        VMSTATE_BOOL(stm32f1xx, STM32F2XXADCState),
         VMSTATE_END_OF_LIST()
     }
+};
+
+static Property stm32f2xx_adc_properties[] = {
+    DEFINE_PROP_BOOL("stm32f1xx-mode", STM32F2XXADCState, stm32f1xx, false),
+    DEFINE_PROP_END_OF_LIST(),
 };
 
 static void stm32f2xx_adc_init(Object *obj)
@@ -278,6 +290,7 @@ static void stm32f2xx_adc_init(Object *obj)
     STM32F2XXADCState *s = STM32F2XX_ADC(obj);
 
     sysbus_init_irq(SYS_BUS_DEVICE(obj), &s->irq);
+    qdev_init_gpio_out_named(DEVICE(SYS_BUS_DEVICE(obj)), &s->dma_req, STM32F2XX_ADC_DMA_REQUEST, 1);
 
     memory_region_init_io(&s->mmio, obj, &stm32f2xx_adc_ops, s,
                           TYPE_STM32F2XX_ADC, 0xFF);
@@ -290,6 +303,7 @@ static void stm32f2xx_adc_class_init(ObjectClass *klass, void *data)
 
     dc->reset = stm32f2xx_adc_reset;
     dc->vmsd = &vmstate_stm32f2xx_adc;
+    device_class_set_props(dc, stm32f2xx_adc_properties);
 }
 
 static const TypeInfo stm32f2xx_adc_info = {
